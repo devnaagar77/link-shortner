@@ -1,0 +1,97 @@
+import java.io.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Scanner;
+
+public class QuickLinkShortener {
+    private final Map<String, String> urlMap = new HashMap<>();
+    private static final String FILE_NAME = "urls.txt";
+
+    public QuickLinkShortener() {
+        loadUrls();
+    }
+
+    private void loadUrls() {
+        try (BufferedReader reader = new BufferedReader(new FileReader(FILE_NAME))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(" ");
+                if (parts.length == 2) {
+                    urlMap.put(parts[0], parts[1]);
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Error loading URLs: " + e.getMessage());
+        }
+    }
+
+    private void saveUrls() {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_NAME))) {
+            for (Map.Entry<String, String> entry : urlMap.entrySet()) {
+                writer.write(entry.getKey() + " " + entry.getValue());
+                writer.newLine();
+            }
+        } catch (IOException e) {
+            System.out.println("Error saving URLs: " + e.getMessage());
+        }
+    }
+
+    public String shortenUrl(String longUrl) {
+        if (!isValidUrl(longUrl)) {
+            return null;
+        }
+        String shortUrl = "http://short.ly/" + Integer.toHexString(longUrl.hashCode());
+        urlMap.put(shortUrl, longUrl);
+        saveUrls();
+        return shortUrl;
+    }
+
+    public String retrieveUrl(String shortUrl) {
+        return urlMap.get(shortUrl);
+    }
+
+    private boolean isValidUrl(String url) {
+        // Basic URL validation (more checks can be added)
+        return url != null && url.startsWith("http://") || url.startsWith("https://");
+    }
+
+    public static void main(String[] args) {
+        QuickLinkShortener shortener = new QuickLinkShortener();
+        Scanner scanner = new Scanner(System.in);
+        String command;
+
+        while (true) {
+            System.out.print("Enter command (shorten, retrieve, quit): ");
+            command = scanner.nextLine();
+
+            switch (command.toLowerCase()) {
+                case "shorten":
+                    System.out.print("Enter long URL: ");
+                    String longUrl = scanner.nextLine();
+                    String shortUrl = shortener.shortenUrl(longUrl);
+                    if (shortUrl != null) {
+                        System.out.println("Shortened URL: " + shortUrl);
+                    } else {
+                        System.out.println("Invalid URL.");
+                    }
+                    break;
+                case "retrieve":
+                    System.out.print("Enter short URL: ");
+                    String urlToRetrieve = scanner.nextLine();
+                    String originalUrl = shortener.retrieveUrl(urlToRetrieve);
+                    if (originalUrl != null) {
+                        System.out.println("Original URL: " + originalUrl);
+                    } else {
+                        System.out.println("Short URL not found.");
+                    }
+                    break;
+                case "quit":
+                    System.out.println("Exiting...");
+                    scanner.close();
+                    return;
+                default:
+                    System.out.println("Invalid command.");
+            }
+        }
+    }
+}
